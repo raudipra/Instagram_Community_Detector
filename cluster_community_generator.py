@@ -16,16 +16,18 @@ import pickle
 import json
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import svds
+import sys
 
 ## Initialize ##
 stop = stopwords.words('english') + list(string.punctuation)
-prohibited_tag = ['CC','DT','EX','FW','IN','MD','PDT','PRP','PRP$','RB','RBR','RBS','RP','SYM','TO','WDT','WP','WP$','WRB']
+symbol = ",._-=+\'\"?/&*:;~`^"
+prohibited_tag = ['\'\'',',','(',')','--',':','.','CC','DT','EX','FW','IN','MD','PDT','PRP','PRP$','RB','RBR','RBS','RP','SYM','TO','WDT','WP','WP$','WRB']
 wnl = WordNetLemmatizer()
 ls = LancasterStemmer()
 def sentence_to_tokens(sentence):
         tokens = word_tokenize(sentence)
         tags = nltk.pos_tag(tokens)
-        return [ls.stem(x[0]) for x in tags if (x[1] not in prohibited_tag) and (x[0] not in stop)]
+        return [ls.stem(x[0]) for x in tags if (x[1] not in prohibited_tag) and (x[0] not in stop) and (x[0][0] not in symbol) and (x[0][len(x[0])-1] not in symbol)]
 
 token_idxs = {}
 subreddit_idxs = {}
@@ -33,12 +35,13 @@ count_token = 0
 count_subreddit = 0
 
 ## Build Token and Subreddit, Pake Sample Data Aja yang ada semua komunitas ##
-with open('samplesGeneric') as f:
+with open(sys.argv[1]) as f:
     count = 0
     for line in f:
         data = json.loads(line)
         sentence = re.sub(r"http\S+", "", data['body'])
         sentence = re.sub(r'[^\w]', ' ', sentence)
+        sentence = re.sub(r"//\S+", "", sentence)
         subreddit = data['subreddit']
         
         if not subreddit in subreddit_idxs:
@@ -50,10 +53,8 @@ with open('samplesGeneric') as f:
                 token_idxs[token] = count_token
                 count_token += 1
         count += 1
-        if count % 1000 == 0:
+        if count % 1000000 == 0:
             print(count)
-        if count > 100000:
-            break
 
 print "Jumlah Token : "+str(count_token)
 print "Jumlah Subreddit : "+str(count_subreddit)
@@ -61,11 +62,13 @@ print "Jumlah Subreddit : "+str(count_subreddit)
 ## Build Frequent Term Document Matrix ##
 frequent_term_document_matrix = {}
 
-with open('samplesGeneric') as f:
+with open(sys.argv[1]) as f:
+    count = 0
     for line in f:
         data = json.loads(line)
         sentence = re.sub(r"http\S+", "", data['body'])
         sentence = re.sub(r'[^\w]', ' ', sentence)
+        sentence = re.sub(r"//\S+", "", sentence)
         subreddit = data['subreddit']
         subreddit_idx = subreddit_idxs[subreddit]
 
@@ -79,6 +82,8 @@ with open('samplesGeneric') as f:
             else:
                 frequent_term_document_matrix[token_idx] = {}
                 frequent_term_document_matrix[token_idx][subreddit_idx] = 1
+        if count % 1000000 == 0:
+            print(count)
 
 # Hapus Variable
 token_idxs = None
@@ -120,7 +125,7 @@ print U.shape, S.shape, V.shape
 
 ## Cluster Community ##
 ## CAN, INI NCOMMUNITY BEBAS MO MASUKIN BERAPA ##
-ncommunity = 4
+ncommunity = int(sys.argv[2])
 new_communities = {}
 for i in range(count_subreddit):
     new_communities[i] = i
@@ -186,7 +191,8 @@ print "New Communities : After"
 print new_communities
 count_subreddit = ncommunity
 
-file = open("communities_cluster_1000.txt","w") 
-file.write(subreddit_idxs) 
-file.write(new_communities)
+file = open(sys.argv[3],"w")
+file.write(str(subreddit_idxs)+"\n")
+file.write("Format -> community : cluster\n")
+file.write(str(new_communities)+"\n")
 file.close()
