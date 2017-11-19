@@ -53,11 +53,11 @@ with open(sys.argv[1]) as f:
                 token_idxs[token] = count_token
                 count_token += 1
         count += 1
-        if (count % 1000000) == 0:
+        if count % 1000000 == 0:
             print(count)
 
-print("Jumlah Token : "+str(count_token))
-print("Jumlah Subreddit : "+str(count_subreddit))
+print "Jumlah Token : "+str(count_token)
+print "Jumlah Subreddit : "+str(count_subreddit)
 
 ## Build Frequent Term Document Matrix ##
 frequent_term_document_matrix = {}
@@ -83,7 +83,7 @@ with open(sys.argv[1]) as f:
             else:
                 frequent_term_document_matrix[token_idx] = {}
                 frequent_term_document_matrix[token_idx][subreddit_idx] = 1
-        if (count % 1000000) == 0:
+        if count % 1000000 == 0:
             print(count)
 
 # Hapus Variable
@@ -93,8 +93,8 @@ token_idxs = None
 row = []
 col = []
 data = []
-for key, value in frequent_term_document_matrix.items():
-    for key1, value1 in value.items():
+for key, value in frequent_term_document_matrix.iteritems():
+    for key1, value1 in value.iteritems():
         row.append(float(key))
         col.append(float(key1))
         data.append(float(value1))
@@ -122,7 +122,7 @@ s = None
 S = S[:count_subreddit-1, :count_subreddit-1]
 U = U[:,:count_subreddit-1]
 V = np.transpose(V)
-print(U.shape, S.shape, V.shape)
+print U.shape, S.shape, V.shape
 
 ## Cluster Community ##
 ## CAN, INI NCOMMUNITY BEBAS MO MASUKIN BERAPA ##
@@ -133,7 +133,7 @@ for i in range(count_subreddit):
     
 ## Hitung Similarity Satu Sama Lain ##
 distance_matrix = pairwise_distances(V, V, metric='cosine', n_jobs=1)
-print(distance_matrix)
+print distance_matrix
 
 ## Masukin ke Array Lalu Sort ##
 arr = []
@@ -155,7 +155,7 @@ for i in range(count_subreddit-ncommunity):
                     del arr[0]
                     distance_matrix[j][k] = -1
                     distance_matrix[k][j] = -1
-                    cluster_k = [key for key, value in new_communities.items() if value == new_communities.get(k)]
+                    cluster_k = [key for key, value in new_communities.iteritems() if value == new_communities.get(k)]
                     for l in cluster_k:
                         new_communities[l] = new_communities.get(j)
             if found:
@@ -164,11 +164,11 @@ for i in range(count_subreddit-ncommunity):
             del arr[0]
 
 ## Bikin Nomer Cluster Urut Terkecil ##
-print("New Communities : Before")
-print(new_communities)
+print "New Communities : Before"
+print new_communities
 temp = []
 change = {}
-for key, value in new_communities.items():
+for key, value in new_communities.iteritems():
     temp.append(value)
 temp = sorted(temp)
 counter = 0
@@ -178,18 +178,18 @@ for i in range(len(temp)):
         counter += 1
     elif (temp[i]==counter) and (change.get(temp[i])==None):
         counter += 1
-print("Perubahan")
-print(change)
+print "Perubahan"
+print change
 
-for key, value in new_communities.items():
+for key, value in new_communities.iteritems():
     if change.get(value) != None:
         new_communities[key] = change.get(value)
 # Hapus Variable
 change = None
 temp = None
 arr = None
-print("New Communities : After")
-print(new_communities)
+print "New Communities : After"
+print new_communities
 count_subreddit = ncommunity
 
 file = open(sys.argv[3],"w")
